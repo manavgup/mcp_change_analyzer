@@ -1,0 +1,38 @@
+server:
+  name: git-analyzer
+  version: 1.0.0
+  port: 8081
+  instructions: "This server provides Git repository analysis tools for analyzing changes, directory structure, and metrics."
+
+analysis:
+  max_files_per_analysis: 1000
+  exclude_patterns:
+    - "*.log"
+    - "*.tmp"
+    - "node_modules/*"
+    - ".git/*"
+    - "venv/*"
+    - "__pycache__/*"
+    - "*.pyc"
+    - "dist/*"
+    - "build/*"
+    - ".DS_Store"
+    - "*.swp"
+    - "*.swo"
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/git_analyzer.log"
+  max_size: 10485760  # 10MB
+  backup_count: 5
+
+a2a:
+  enabled: true
+  known_servers:
+    pr-recommender:
+      url: "http://localhost:8082"
+      protocol: "http"
+    orchestrator:
+      url: "http://localhost:8080"
+      protocol: "http"
