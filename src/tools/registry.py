@@ -4,11 +4,11 @@ Tool registry for Change Analyzer MCP server.
 import logging
 from typing import Dict, List, Type, Any, Optional
 
-from src.tools.base_tool import BaseTool
+from mcp_shared_lib.src.tools.base_tool import BaseTool
 from src.tools.repo_analyzer import RepoAnalyzerTool
 from src.tools.metrics_collector import MetricsCollectorTool
-from src.tools.directory_analyzer import DirectoryAnalyzerTool
 from src.lib.error.handler import MCPError
+from mcp_shared_lib.src.tools.directory_analyzer_tool import DirectoryAnalyzer as SharedDirectoryAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class ToolRegistry:
         self._tool_classes: Dict[str, Type[BaseTool]] = {
             'analyze_repository': RepoAnalyzerTool,
             'collect_metrics': MetricsCollectorTool,
-            'analyze_directories': DirectoryAnalyzerTool,
+            'analyze_directories': SharedDirectoryAnalyzer,
         }
         logger.info(f"Tool registry initialized with {len(self._tool_classes)} tool types")
     

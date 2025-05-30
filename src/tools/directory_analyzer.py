@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError
 import logging
 logger = logging.getLogger(__name__)
 
-from src.tools.base_tool import BaseRepoTool
+from mcp_shared_lib.src.tools.base_tool import BaseRepoTool
 
 
 class DirectoryAnalyzerSchema(BaseModel):

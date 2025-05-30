@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.lib.models.git_models import RepositoryAnalysis
-from src.tools.base_tool import BaseRepoTool
+from mcp_shared_lib.src.tools.base_tool import BaseRepoTool
 
 
 class RepoAnalyzerSchema(BaseModel):
