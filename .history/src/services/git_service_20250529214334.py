@@ -9,13 +9,13 @@ import asyncio
 import subprocess
 import logging
 
-from mcp_shared_lib.src.models.git_models import (
+from mcp_shared_lib.models.git_models import (
     FileChange,
     LineChanges,
     FileStatusType,
     FileType,
 )
-from mcp_shared_lib.src.models.analysis_models import (
+from mcp_shared_lib.models.analysis_models import (
     RepositoryAnalysis,
     DirectorySummary,
 )

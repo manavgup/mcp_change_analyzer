@@ -6,12 +6,13 @@ from typing import List, Dict, Any
 from pathlib import Path
 import math
 import json
+import logging
 from pydantic import BaseModel, Field, ValidationError
 
+from src.tools.base_tool import BaseTool
 from mcp_shared_lib.tools.base_tool import BaseRepoTool
-from mcp_shared_lib.utils.logging_utils import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DirectoryAnalyzerSchema(BaseModel):

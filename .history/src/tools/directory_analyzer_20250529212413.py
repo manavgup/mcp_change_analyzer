@@ -1,25 +1,22 @@
 """
 Directory analyzer tool for Change Analyzer MCP server.
 """
-
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 import math
 import json
+
 from pydantic import BaseModel, Field, ValidationError
 
-from mcp_shared_lib.tools.base_tool import BaseRepoTool
-from mcp_shared_lib.utils.logging_utils import get_logger
+import logging
+logger = logging.getLogger(__name__)
 
-logger = get_logger(__name__)
+from mcp_shared_lib.src.tools.base_tool import BaseRepoTool
 
 
 class DirectoryAnalyzerSchema(BaseModel):
     """Input schema for the DirectoryAnalyzer tool."""
-
-    repository_analysis_json: str = Field(
-        ..., description="JSON string serialization of the RepositoryAnalysis object."
-    )
+    repository_analysis_json: str = Field(..., description="JSON string serialization of the RepositoryAnalysis object.")
 
 
 class DirectoryAnalyzerTool(BaseRepoTool):
@@ -45,30 +42,24 @@ class DirectoryAnalyzerTool(BaseRepoTool):
             JSON string containing directory analysis information.
         """
         # Log received inputs for debugging
-        logger.info(
-            f"DirectoryAnalyzer received repository_analysis_json: {repository_analysis_json[:100]}..."
-        )
-
+        logger.info(f"DirectoryAnalyzer received repository_analysis_json: {repository_analysis_json[:100]}...")
+        
         try:
             logger.info("Running Directory Analyzer Tool...")
-
+            
             # Validate the input JSON
             if not self._validate_json_string(repository_analysis_json):
                 raise ValueError("Invalid repository_analysis_json provided")
-
+            
             # Extract directory summaries
-            directory_summaries = self._extract_directory_summaries(
-                repository_analysis_json
-            )
-
+            directory_summaries = self._extract_directory_summaries(repository_analysis_json)
+            
             # Extract repository info
             repo_info = self._extract_repository_info(repository_analysis_json)
             total_files_changed = repo_info.get("total_files_changed", 0)
-
+            
             if not directory_summaries:
-                logger.warning(
-                    "No directory summaries found in repository_analysis. Returning empty result."
-                )
+                logger.warning("No directory summaries found in repository_analysis. Returning empty result.")
                 # Return a valid empty result
                 empty_result = {
                     "directory_count": 0,
@@ -76,30 +67,27 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                     "avg_files_per_directory": 0.0,
                     "directory_complexity": [],
                     "parent_child_relationships": [],
-                    "potential_feature_directories": [],
+                    "potential_feature_directories": []
                 }
                 return json.dumps(empty_result, indent=2)
 
+            # Extract directory paths
+            directory_paths = [ds.get("path", "") for ds in directory_summaries if ds.get("path")]
+            
             # Extract directory strings
             directory_strings = []
             for dir_summary in directory_summaries:
                 dir_path_str = dir_summary.get("path", "")
-                if (
-                    dir_path_str and dir_path_str != "."
-                ):  # Filter out empty or '.' which means root
+                if dir_path_str and dir_path_str != '.':  # Filter out empty or '.' which means root
                     directory_strings.append(dir_path_str)
-                elif (
-                    dir_path_str == "." or dir_path_str == "(root)"
-                ):  # Handle explicit root markers
+                elif dir_path_str == '.' or dir_path_str == '(root)':  # Handle explicit root markers
                     directory_strings.append("(root)")
 
             # Convert to Path objects for hierarchy analysis
             directories_paths = [Path(d) for d in directory_strings if d != "(root)"]
-
+            
             # Calculate directory hierarchy
-            hierarchy_result = self._calculate_hierarchy(
-                directories_paths, set(directory_strings)
-            )
+            hierarchy_result = self._calculate_hierarchy(directories_paths, set(directory_strings))
 
             # Calculate directory complexity
             directory_complexity_results = []
@@ -113,37 +101,28 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                 total_changes = dir_summary.get("total_changes", 0)
 
                 # Simple complexity heuristic
-                complexity_score = min(
-                    10.0,
-                    (
-                        (file_count * 0.3)
-                        + (len(extensions) * 1.0)
-                        + (math.log10(max(1, total_changes)) * 2.0)  # Avoid log(0)
-                    ),
-                )
+                complexity_score = min(10.0, (
+                    (file_count * 0.3) +
+                    (len(extensions) * 1.0) +
+                    (math.log10(max(1, total_changes)) * 2.0)  # Avoid log(0)
+                ))
 
-                directory_complexity_results.append(
-                    {
-                        "path": dir_path,
-                        "file_count": file_count,
-                        "changed_file_count": file_count,  # Mapping directly from summary file_count
-                        "extension_counts": extensions,
-                        "estimated_complexity": round(complexity_score, 2),
-                    }
-                )
+                directory_complexity_results.append({
+                    "path": dir_path,
+                    "file_count": file_count,
+                    "changed_file_count": file_count,  # Mapping directly from summary file_count
+                    "extension_counts": extensions,
+                    "estimated_complexity": round(complexity_score, 2)
+                })
 
             # Calculate directory relatedness
             relatedness_matrix = self._calculate_relatedness(directory_summaries)
 
             # Identify potential feature directories
-            potential_features = self._identify_potential_features(
-                directory_summaries, relatedness_matrix
-            )
+            potential_features = self._identify_potential_features(directory_summaries, relatedness_matrix)
 
             # Calculate avg files per changed directory
-            num_changed_dirs = len(
-                {ds.get("path", "") for ds in directory_summaries if ds.get("path", "")}
-            )  # Count unique dirs
+            num_changed_dirs = len({ds.get("path", "") for ds in directory_summaries if ds.get("path", "")})  # Count unique dirs
             avg_files = 0.0
             if total_files_changed > 0 and num_changed_dirs > 0:
                 avg_files = round(total_files_changed / num_changed_dirs, 2)
@@ -155,16 +134,14 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                 "avg_files_per_directory": avg_files,
                 "directory_complexity": directory_complexity_results,
                 "parent_child_relationships": hierarchy_result["relationships"],
-                "potential_feature_directories": potential_features,
+                "potential_feature_directories": potential_features
             }
 
             logger.info("Directory analysis complete.")
             return json.dumps(result, indent=2)
 
         except ValidationError as ve:
-            error_msg = (
-                f"Pydantic validation error during directory analysis: {str(ve)}"
-            )
+            error_msg = f"Pydantic validation error during directory analysis: {str(ve)}"
             logger.error(error_msg, exc_info=True)
             error_result = {
                 "directory_count": 0,
@@ -173,7 +150,7 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                 "directory_complexity": [],
                 "parent_child_relationships": [],
                 "potential_feature_directories": [],
-                "error": error_msg,
+                "error": error_msg
             }
             return json.dumps(error_result, indent=2)
         except json.JSONDecodeError as je:
@@ -186,7 +163,7 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                 "directory_complexity": [],
                 "parent_child_relationships": [],
                 "potential_feature_directories": [],
-                "error": error_msg,
+                "error": error_msg
             }
             return json.dumps(error_result, indent=2)
         except Exception as e:
@@ -199,15 +176,13 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                 "directory_complexity": [],
                 "parent_child_relationships": [],
                 "potential_feature_directories": [],
-                "error": error_msg,
+                "error": error_msg
             }
             return json.dumps(error_result, indent=2)
 
     # --- Helper Methods ---
 
-    def _calculate_hierarchy(
-        self, directories: List[Path], dir_strings_set: set
-    ) -> Dict[str, Any]:
+    def _calculate_hierarchy(self, directories: List[Path], dir_strings_set: set) -> Dict[str, Any]:
         """
         Calculate directory hierarchy information.
 
@@ -224,7 +199,7 @@ class DirectoryAnalyzerTool(BaseRepoTool):
         max_depth = 0
         for d_path in directories:
             # Calculate depth based on parts for non-root paths
-            max_depth = max(max_depth, len(d_path.parts))
+             max_depth = max(max_depth, len(d_path.parts))
 
         relationships_list = []
         processed_children = set()  # Avoid duplicate relationships if structure is deep
@@ -238,19 +213,23 @@ class DirectoryAnalyzerTool(BaseRepoTool):
 
             # Determine parent string representation
             parent_str = str(parent_path)
-            if parent_str == ".":
+            if parent_str == '.':
                 parent_str = "(root)"
 
             # Check if the calculated parent exists in the set of changed directories
             if parent_str in dir_strings_set:
-                relationships_list.append({"parent": parent_str, "child": dir_str})
+                relationships_list.append({
+                    "parent": parent_str,
+                    "child": dir_str
+                })
                 processed_children.add(dir_str)
 
-        return {"max_depth": max_depth, "relationships": relationships_list}
+        return {
+            "max_depth": max_depth,
+            "relationships": relationships_list
+        }
 
-    def _calculate_relatedness(
-        self, directory_summaries: List[Dict[str, Any]]
-    ) -> Dict[str, Dict[str, float]]:
+    def _calculate_relatedness(self, directory_summaries: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
         """
         Calculate relatedness between directories based on common file extensions.
 
@@ -261,6 +240,7 @@ class DirectoryAnalyzerTool(BaseRepoTool):
             Dictionary mapping directory pairs to relatedness scores (Jaccard Index).
         """
         relatedness: Dict[str, Dict[str, float]] = {}
+        dir_paths = [ds.get("path", "") for ds in directory_summaries if ds.get("path", "")]  # Get valid paths
 
         for i, dir1 in enumerate(directory_summaries):
             dir1_path = dir1.get("path", "")
@@ -290,17 +270,12 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                     # Jaccard Index
                     similarity = intersection / union if union > 0 else 0.0
 
-                relatedness[dir1_path][dir2_path] = round(
-                    similarity, 3
-                )  # Store rounded score
+                relatedness[dir1_path][dir2_path] = round(similarity, 3)  # Store rounded score
 
         return relatedness
 
-    def _identify_potential_features(
-        self,
-        directory_summaries: List[Dict[str, Any]],
-        relatedness_matrix: Dict[str, Dict[str, float]],
-    ) -> List[Dict[str, Any]]:
+    def _identify_potential_features(self, directory_summaries: List[Dict[str, Any]],
+                                     relatedness_matrix: Dict[str, Dict[str, float]]) -> List[Dict[str, Any]]:
         """
         Identify potential feature directories based on file types and relatedness.
 
@@ -345,16 +320,14 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                 if is_diverse and is_cross_cutting:
                     confidence += 0.1  # Bonus
 
-                potential_features_list.append(
-                    {
-                        "directory": dir_path,
-                        "is_diverse": is_diverse,
-                        "is_cross_cutting": is_cross_cutting,
-                        "file_types": file_types,
-                        "related_directories": related_dirs,
-                        "confidence": min(1.0, round(confidence, 2)),  # Cap at 1.0
-                    }
-                )
+                potential_features_list.append({
+                    "directory": dir_path,
+                    "is_diverse": is_diverse,
+                    "is_cross_cutting": is_cross_cutting,
+                    "file_types": file_types,
+                    "related_directories": related_dirs,
+                    "confidence": min(1.0, round(confidence, 2))  # Cap at 1.0
+                })
 
         return potential_features_list
 
@@ -366,17 +339,13 @@ class DirectoryAnalyzerTool(BaseRepoTool):
         except (json.JSONDecodeError, TypeError):
             return False
 
-    def _extract_directory_summaries(
-        self, repository_analysis_json: str
-    ) -> List[Dict[str, Any]]:
+    def _extract_directory_summaries(self, repository_analysis_json: str) -> List[Dict[str, Any]]:
         """Extract directory summaries from repository analysis JSON."""
         try:
             data = json.loads(repository_analysis_json)
             return data.get("directory_summaries", [])
         except (json.JSONDecodeError, KeyError, TypeError):
-            logger.error(
-                "Failed to extract directory_summaries from repository analysis JSON"
-            )
+            logger.error("Failed to extract directory_summaries from repository analysis JSON")
             return []
 
     def _extract_repository_info(self, repository_analysis_json: str) -> Dict[str, Any]:
@@ -386,10 +355,8 @@ class DirectoryAnalyzerTool(BaseRepoTool):
             return {
                 "total_files_changed": data.get("total_files_changed", 0),
                 "total_lines_changed": data.get("total_lines_changed", 0),
-                "repo_path": data.get("repo_path", ""),
+                "repo_path": data.get("repo_path", "")
             }
         except (json.JSONDecodeError, KeyError, TypeError):
-            logger.error(
-                "Failed to extract repository info from repository analysis JSON"
-            )
+            logger.error("Failed to extract repository info from repository analysis JSON")
             return {}

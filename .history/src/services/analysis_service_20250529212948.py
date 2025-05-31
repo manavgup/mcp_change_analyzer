@@ -26,8 +26,7 @@ class AnalysisService:
         self.git_service = GitService
 
         logger.info(
-            f"Analysis service initialized with max_files_per_analysis: "
-            f"{self.max_files_per_analysis}"
+            f"Analysis service initialized with max_files_per_analysis: {self.max_files_per_analysis}"
         )
 
     async def analyze_repository(

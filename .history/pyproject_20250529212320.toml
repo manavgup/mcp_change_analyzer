@@ -1,19 +1,20 @@
 [tool.poetry]
-name = "mcp_change_analyzer"
+name = "mcp-change-analyzer"
 version = "0.1.0"
 description = "Git Change Analyzer MCP Server with A2A Protocol Support"
-authors = ["Manav Gupta <manavg@gmail.com>"]
+authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 fastmcp = "^0.1.0"
+a2a-python = "^0.1.0"  # Google's A2A protocol library
 pydantic = "^2.0.0"
 gitpython = "^3.1.30"
-fastapi = ">=0.100.0"
-uvicorn = ">=0.22.0"
-httpx = ">=0.26.0"
+redis = "^4.5.5"
+fastapi = "^0.100.0"
+uvicorn = "^0.22.0"
+httpx = "^0.24.1"
 mcp-shared-lib = {path = "../mcp_shared_lib", develop = true}
 
 [tool.poetry.group.dev.dependencies]
@@ -22,10 +23,6 @@ black = "^23.3.0"
 flake8 = "^6.0.0"
 mypy = "^1.3.0"
 isort = "^5.12.0"
-
-[tool.flake8]
-max-line-length = 120
-extend-ignore = ["E203", "W503"]
 
 [build-system]
 requires = ["poetry-core"]

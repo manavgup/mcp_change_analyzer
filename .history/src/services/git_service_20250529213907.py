@@ -255,7 +255,7 @@ class GitService:
         Returns:
             RepositoryAnalysis object with analysis results
         """
-        logger.info("Starting repository analysis")
+        start_time = logger.info("Starting repository analysis")
 
         try:
             # Get changed files

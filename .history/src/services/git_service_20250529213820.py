@@ -9,11 +9,12 @@ import asyncio
 import subprocess
 import logging
 
-from mcp_shared_lib.src.models.git_models import (
+from ..mcp_shared_lib.src.models.git_models import (
     FileChange,
     LineChanges,
     FileStatusType,
     FileType,
+    DiffSummary,
 )
 from mcp_shared_lib.src.models.analysis_models import (
     RepositoryAnalysis,
@@ -255,7 +256,7 @@ class GitService:
         Returns:
             RepositoryAnalysis object with analysis results
         """
-        logger.info("Starting repository analysis")
+        start_time = logger.info("Starting repository analysis")
 
         try:
             # Get changed files

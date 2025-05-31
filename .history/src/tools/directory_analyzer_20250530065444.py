@@ -2,16 +2,18 @@
 Directory analyzer tool for Change Analyzer MCP server.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 import math
 import json
+
 from pydantic import BaseModel, Field, ValidationError
 
-from mcp_shared_lib.tools.base_tool import BaseRepoTool
-from mcp_shared_lib.utils.logging_utils import get_logger
+import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
+
+from mcp_shared_lib.src.tools.base_tool import BaseRepoTool
 
 
 class DirectoryAnalyzerSchema(BaseModel):
@@ -79,6 +81,11 @@ class DirectoryAnalyzerTool(BaseRepoTool):
                     "potential_feature_directories": [],
                 }
                 return json.dumps(empty_result, indent=2)
+
+            # Extract directory paths
+            directory_paths = [
+                ds.get("path", "") for ds in directory_summaries if ds.get("path")
+            ]
 
             # Extract directory strings
             directory_strings = []
@@ -261,6 +268,9 @@ class DirectoryAnalyzerTool(BaseRepoTool):
             Dictionary mapping directory pairs to relatedness scores (Jaccard Index).
         """
         relatedness: Dict[str, Dict[str, float]] = {}
+        dir_paths = [
+            ds.get("path", "") for ds in directory_summaries if ds.get("path", "")
+        ]  # Get valid paths
 
         for i, dir1 in enumerate(directory_summaries):
             dir1_path = dir1.get("path", "")

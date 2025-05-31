@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError
 import logging
 logger = logging.getLogger(__name__)
 
-from src.lib.models.git_models import RepositoryAnalysis
+from mcp_shared_lib.src.models.analysis_models import RepositoryAnalysis
 from mcp_shared_lib.src.tools.base_tool import BaseRepoTool
 
 

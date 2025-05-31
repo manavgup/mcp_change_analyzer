@@ -4,17 +4,21 @@ version = "0.1.0"
 description = "Git Change Analyzer MCP Server with A2A Protocol Support"
 authors = ["Manav Gupta <manavg@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 fastmcp = "^0.1.0"
+a2a-python = ">=0.0.1"                                          # Google's A2A protocol library
 pydantic = "^2.0.0"
 gitpython = "^3.1.30"
+redis = "^4.5.5"
 fastapi = ">=0.100.0"
 uvicorn = ">=0.22.0"
 httpx = ">=0.26.0"
-mcp-shared-lib = {path = "../mcp_shared_lib", develop = true}
+mcp-shared-lib = { path = "../mcp_shared_lib", develop = true }
+
+[tool.poetry.package-paths]
+mcp_shared_lib = "../mcp_shared_lib"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
